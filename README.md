@@ -43,6 +43,6 @@ token: 0000000000000000000000000000000000000000000000000000000
 
 In case of issues you can change the level of verbose modifing the value inside "Configuration".
 
-0 = only info [default]
-1 = ERROR
-2 = DEBUG
+0 = only info [default];
+1 = ERROR;
+2 = DEBUG;
