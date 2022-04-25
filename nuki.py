@@ -9,6 +9,7 @@ import enum
 import crc16
 import nacl.utils
 import nacl.secret
+from bleak.exc import BleakDBusError #added
 from nacl.bindings.crypto_box import crypto_box_beforenm
 from bleak import BleakScanner, BleakClient
 
@@ -131,8 +132,20 @@ class NukiManager:
         self._devices[nuki.address] = nuki
 
     async def start_scanning(self):
-        logger.info("Start scanning")
-        await self._scanner.start()
+        #logger.info("Start scanning")
+        #await self._scanner.start()
+
+        for i in range(8):
+            try:
+                logger.info("Start scanning")
+                await self._scanner.start()
+                logger.info(f"Scanning succeeded on attempt {i+1}")
+                break
+            except BleakDBusError as e:
+                logger.error(e)
+                sleep_seconds = 2 ** i
+                logger.info(f"Scanning failed. Retrying in {sleep_seconds} seconds")
+                time.sleep(sleep_seconds)
 
     async def stop_scanning(self):
         logger.info("Stop scanning")
@@ -143,7 +156,8 @@ class NukiManager:
 
     async def _detected_ibeacon(self, device, advertisement_data):
         if device.address in self._devices:
-            manufacturer_data = advertisement_data.manufacturer_data[76]
+            #manufacturer_data = advertisement_data.manufacturer_data[76]
+            manufacturer_data = advertisement_data.manufacturer_data.get(76, None)
             if manufacturer_data[0] != 0x02:
                 # Ignore HomeKit advertisement
                 return
