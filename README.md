@@ -1,12 +1,12 @@
 # NukiBridgeAddon
-The addon version of the simple [Nuki Bridge](https://nuki.io/en/bridge/) implementation using asyncio developed by [Dauden1184](https://github.com/dauden1184/RaspiNukiBridge).
+The add-on version of the simple [Nuki Bridge](https://nuki.io/en/bridge/) implementation using asyncio developed by [Dauden1184](https://github.com/dauden1184/RaspiNukiBridge).
 
 Minimal implementation of the Nuki Bridge protocols in python (both HTTP and BLE).  
 Right now **pairing**, **lock**, **unlock**, **unlatch** and HTTP callbacks are implemented, it works fine with the [Homeassistant Nuki integration](https://www.home-assistant.io/integrations/nuki/) and the [hass_nuki_ng integration](https://github.com/kvj/hass_nuki_ng).
 
 Refer to [Dauden1184](https://github.com/dauden1184/RaspiNukiBridge) for further code information.
 
-# Home Assistant addon installation
+# Home Assistant add-on installation
 
 1. Copy the repository files into local ADDON folder.
 2. Open the Home Assistant frontend and go to "Configuration"
@@ -15,7 +15,7 @@ Refer to [Dauden1184](https://github.com/dauden1184/RaspiNukiBridge) for further
 5. Open your Home Assistant instance and show the Supervisor add-on store.
 6. On the top right overflow menu, click the "Check for updates" button. You should now see a new section at the top of the store called "Local add-ons" that lists this add-on!
 7. Click on NukiBridgeAddon to go to the details page and install the add-on.
-8. Go to the addon configuration and add your lock MAC address. You can find it using a BLE app on your smartphone or through your PI directly (by ssh)
+8. Go to the add-on configuration and add your lock MAC address. You can find it using a BLE app on your smartphone or through your PI directly (by ssh)
 ```
 sudo bluetoothctl
 agent on
@@ -30,18 +30,19 @@ scan on
 Install either:
 1. [hass_nuki_ng integration](https://github.com/kvj/hass_nuki_ng)
 2. [Homeassistant Nuki integration](https://www.home-assistant.io/integrations/nuki/)
+
+Use *localhost as host and about the token have a look inside the log once the add-on is started.
+```
+BRIDGE DATA:
+app_id: 0000000000
+token: 0000000000000000000000000000000000000000000000000000000
+```
+
 # Advanced
-## Connection timeout and retries
+## Verbose
 
-In case of issues during the bluetooth connection to the nuki device, it is possible to set a higher connection timeout and the number of retries with the fields `connection_timeout` (default is 10 seconds) and `retry` (default is 3) like this:
+In case of issues you can change the level of verbose modifing the value inside "Configuration".
 
-```
-smartlock:
-  - address: XX:XX:XX:XX:XX:XX
-    bridge_public_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    bridge_private_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    nuki_public_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    auth_id: xxxxxxxx
-    connection_timeout: 30
-    retry: 5
-```
+0 = only info [default]
+1 = ERROR
+2 = DEBUG

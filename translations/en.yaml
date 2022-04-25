@@ -2,3 +2,6 @@ configuration:
   lock_MAC:
     name: Lock MAC address
     description: Lock MAC address is needed to pair your nuki smartlock. You can use a BLE scanner app to find it.
+  verbose:
+    name: Verbose mode
+    description: Default 0 = INFO; 1 = ERROR; 2 = DEBUG
