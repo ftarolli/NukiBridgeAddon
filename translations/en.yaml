@@ -1,0 +1,4 @@
+configuration:
+  lock_MAC:
+    name: Lock MAC address
+    description: Lock MAC address is needed to pair your nuki smartlock. You can use a BLE scanner app to find it.

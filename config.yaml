@@ -1,0 +1,22 @@
+name: "NukiBridgeAddon"
+description: "A HomeAssistant add-on to build a bridge between your PI and the Nuki Lock."
+version: "0.1"
+slug: "nukibridgeaddon"
+init: false
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: services
+host_network: false
+host_dbus: true
+options:
+  lock_MAC: null
+  verbose: 0
+schema:
+  lock_MAC: str
+  verbose: int(0, 2)
+ports:
+  8080/tcp: 8080
