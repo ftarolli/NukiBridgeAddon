@@ -16,10 +16,12 @@ Refer to [Dauden1184](https://github.com/dauden1184/RaspiNukiBridge) for further
 6. On the top right overflow menu, click the "Check for updates" button. You should now see a new section at the top of the store called "Local add-ons" that lists this add-on!
 7. Click on NukiBridgeAddon to go to the details page and install the add-on.
 8. Go to the addon configuration and add your lock MAC address. You can find it using a BLE app on your smartphone or through your PI directly (by ssh)
-> sudo bluetoothctl
-> agent on
-> default-agent
-> scan on
+```
+sudo bluetoothctl
+agent on
+default-agent
+scan on
+```
 9. Now put your lock into discovery mode (hold the central button for 6sec until it lights up)
 10. Start the addon
 11. Click on the "Logs" tab, and refresh the logs of your add-on. Your should see what's going on.
