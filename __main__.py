@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-from pickle import FALSE
 import random
 import yaml
 import datetime
@@ -56,19 +55,25 @@ class WebServer:
 
     @staticmethod
     def _get_nuki_last_state(nuki):
-        return {"mode": nuki.last_state["nuki_state"],
-                "state": nuki.last_state["lock_state"].value,
-                "stateName": nuki.last_state["lock_state"].name,
-                "batteryCritical": nuki.is_battery_critical,
-                "batteryCharging": nuki.is_battery_charging,
-                "batteryChargeState": nuki.battery_percentage,
-                "keypadBatteryCritical": False,  # How to get this from bt api?
-                "doorsensorState": nuki.last_state["door_sensor_state"].value,
-                "doorsensorStateName": nuki.last_state["door_sensor_state"].name,
-                "ringactionTimestamp": None,  # How to get this from bt api?
-                "ringactionState": None,  # How to get this from bt api?
-                "timestamp": nuki.last_state["current_time"].isoformat().split(".")[0],
-                }
+        state = {"mode": nuki.last_state["nuki_state"].value,
+                 "state": nuki.last_state["lock_state"].value,
+                 "stateName": nuki.last_state["lock_state"].name,
+                 "batteryCritical": nuki.is_battery_critical,
+                 "batteryCharging": nuki.is_battery_charging,
+                 "batteryChargeState": nuki.battery_percentage,
+                 "keypadBatteryCritical": False,  # How to get this from bt api?
+                 "doorsensorState": nuki.last_state["door_sensor_state"].value,
+                 "doorsensorStateName": nuki.last_state["door_sensor_state"].name,
+                 "ringactionTimestamp": None,  # How to get this from bt api?
+                 "ringactionState": None,  # How to get this from bt api?
+                 "timestamp": nuki.last_state["current_time"].isoformat().split(".")[0],
+                 }
+
+        if nuki.device_type == DeviceType.OPENER:
+            state["ringactionTimestamp"] = nuki.last_state["current_time"].isoformat().split(".")[0]
+            state["ringactionState"] = nuki.last_state["last_lock_action_completion_status"]
+
+        return state
 
     async def _newstate(self, nuki):
         logger.info(f"Nuki new state: {nuki.last_state}")
@@ -183,11 +188,27 @@ class WebServer:
         return web.Response(text=res)
 
 
+def _add_devices_to_manager(data, nuki_manager):
+    for ls in data["smartlock"]:
+        address = ls["address"]
+        auth_id = bytes.fromhex(ls["auth_id"])
+        nuki_public_key = bytes.fromhex(ls["nuki_public_key"])
+        bridge_public_key = bytes.fromhex(ls["bridge_public_key"])
+        bridge_private_key = bytes.fromhex(ls["bridge_private_key"])
+        n = Nuki(address, auth_id, nuki_public_key, bridge_public_key, bridge_private_key)
+        n.retry = ls.get("retry", 3)
+        n.connection_timeout = ls.get("connection_timeout", 10)
+        n.command_timeout = ls.get("command_timeout", 30)
+        nuki_manager.add_nuki(n)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", metavar=('CONFIG_FILE',), help="Specify the yaml file to use")
     parser.add_argument("--pair", metavar=('MAC_ADDRESS',), help="Pair to a nuki smartlock")
     parser.add_argument("--generate-config", action='store_true', help="Generate a new configuration file")
+    parser.add_argument("--unlock", action='store_true', help="Unlock")
+    parser.add_argument("--lock", action='store_true', help="Lock")
     parser.add_argument("--verbose", nargs='?', const=1, type=int, default=0, help="More logs")
     args = parser.parse_args()
 
@@ -208,8 +229,8 @@ if __name__ == "__main__":
         app_id = random.getrandbits(32)
         token = random.getrandbits(256).to_bytes(32, "little").hex()
 
-        logger.info(f"Configuration file created, app_id: {app_id}")
-        logger.info(f"Configuration file created, token: {token}")
+        #logger.info(f"Configuration file created, app_id: {app_id}")
+        #logger.info(f"Configuration file created, token: {token}")
         print(f"server:\n"
               f"  host: 0.0.0.0\n"
               f"  port: 8080\n"
@@ -228,7 +249,7 @@ if __name__ == "__main__":
               f"    retry: 5\n")
         exit(0)
 
-    config_file = args.config or "nuki.yaml"
+    config_file = args.config #or "nuki.yaml"
     with open(config_file) as f:
         data = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -240,58 +261,53 @@ if __name__ == "__main__":
 
     if args.pair:
         address = args.pair
-        logger.info(f"Generating keys for Nuki {address}")
+        logger.info(f"Generatig keys for Nuki {address}")
         keypair = PrivateKey.generate()
         bridge_public_key = keypair.public_key.__bytes__()
         bridge_private_key = keypair.__bytes__()
         logger.info(f"bridge_public_key: {bridge_public_key.hex()}")
         logger.info(f"bridge_private_key: {bridge_private_key.hex()}")
+        nuki = Nuki(address, None, None, bridge_public_key, bridge_private_key)
+        nuki_manager.add_nuki(nuki)
 
-        #modifica nuki.yaml
+        #modify nuki.yaml
         for ls in data["smartlock"]:
             ls["address"] = address
             ls["bridge_public_key"] = bridge_public_key.hex()
             ls["bridge_private_key"] = bridge_private_key.hex()
-
-        nuki = Nuki(address, None, None, bridge_public_key, bridge_private_key)
-        nuki_manager.add_nuki(nuki)
 
         loop = asyncio.get_event_loop()
 
         def pairing_completed(paired_nuki):
             logger.info(f"Pairing completed, nuki_public_key: {paired_nuki.nuki_public_key.hex()}")
             logger.info(f"Pairing completed, auth_id: {paired_nuki.auth_id.hex()}")
-
-            #modifica nuki.yaml
+            
+            #modify nuki.yaml
             for ls in data["smartlock"]:
                 ls["nuki_public_key"] = paired_nuki.nuki_public_key.hex()
                 ls["auth_id"] = paired_nuki.auth_id.hex()
-            
             data["server"]["paired"] = "true"
-
+            
             loop.stop()
         loop.create_task(nuki.pair(pairing_completed))
         loop.run_forever()
 
-        #riscrivi nuki.yaml
+        #write nuki.yaml with new smartlock config
         with open(config_file, "w") as f:
             yaml.dump(data, f)
 
     else:
-        for ls in data["smartlock"]:
-            address = ls["address"]
-            auth_id = bytes.fromhex(ls["auth_id"])
-            nuki_public_key = bytes.fromhex(ls["nuki_public_key"])
-            bridge_public_key = bytes.fromhex(ls["bridge_public_key"])
-            bridge_private_key = bytes.fromhex(ls["bridge_private_key"])
-            n = Nuki(address, auth_id, nuki_public_key, bridge_public_key, bridge_private_key)
-            n.retry = ls.get("retry", 3)
-            n.connection_timeout = ls.get("connection_timeout", 10)
-            n.command_timeout = ls.get("command_timeout", 30)
-            nuki_manager.add_nuki(n)
+        _add_devices_to_manager(data, nuki_manager)
 
-        host = data["server"]["host"]
-        port = data["server"]["port"]
-        token = data["server"]["token"]
-        web_server = WebServer(host, port, token, nuki_manager)
-        web_server.start()
+        if args.unlock:
+            device = nuki_manager.device_list[0]
+            asyncio.run(device.unlock())
+        elif args.lock:
+            device = nuki_manager.device_list[0]
+            asyncio.run(device.lock())
+        else:
+            host = data["server"]["host"]
+            port = data["server"]["port"]
+            token = data["server"]["token"]
+            web_server = WebServer(host, port, token, nuki_manager)
+            web_server.start()
