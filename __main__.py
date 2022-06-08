@@ -67,6 +67,7 @@ class WebServer:
                  "ringactionTimestamp": None,  # How to get this from bt api?
                  "ringactionState": None,  # How to get this from bt api?
                  "timestamp": nuki.last_state["current_time"].isoformat().split(".")[0],
+                 "success": True,
                  }
 
         if nuki.device_type == DeviceType.OPENER:
@@ -229,8 +230,6 @@ if __name__ == "__main__":
         app_id = random.getrandbits(32)
         token = random.getrandbits(256).to_bytes(32, "little").hex()
 
-        #logger.info(f"Configuration file created, app_id: {app_id}")
-        #logger.info(f"Configuration file created, token: {token}")
         print(f"server:\n"
               f"  host: 0.0.0.0\n"
               f"  port: 8080\n"
