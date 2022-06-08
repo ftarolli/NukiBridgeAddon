@@ -1,6 +1,6 @@
 name: "NukiBridgeAddon"
 description: "A HomeAssistant add-on to build a bridge between your PI and the Nuki Lock."
-version: "0.1.1"
+version: "0.1.2"
 slug: "nukibridgeaddon"
 url: "https://github.com/ftarolli/NukiBridgeAddon"
 arch:
